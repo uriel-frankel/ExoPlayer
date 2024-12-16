@@ -1,18 +1,18 @@
 package com.geeksforgeeks.exoplayer
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.viewmodel.CreationExtras.Empty.map
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.ConcatenatingMediaSource2
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MergingMediaSource
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
-
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
@@ -30,27 +30,42 @@ class MainActivity : AppCompatActivity() {
         player = ExoPlayer.Builder(this).build()
         playerView?.setPlayer(player)
 
-        val list = arrayListOf(
-            "asset:///a01.mp4",
-            "asset:///v01.mp4",
-            "asset:///a02.mp4",
-            "asset:///v02.mp4",
-            "asset:///a03.mp4",
-            "asset:///v03.mp4",
-            "asset:///a04.mp4",
-            "asset:///v04.mp4",
+        val videoList = arrayListOf(
+            "v01.mp4",
+            "v02.mp4",
+            "v03.mp4",
+            "v04.mp4",
         )
+
         // Build the MediaItem
 
 
         // Prepare the player with the media item
-        val items = list.map {ProgressiveMediaSource.Factory(FileDataSource.Factory()).createMediaSource(MediaItem.fromUri(it))}
+        val videoMediaItems = videoList.map { MediaItem.fromUri(Uri.fromFile(File(MainActivity@ this.filesDir.absolutePath + File.separator + it))) }
+        val videoBuilder = ConcatenatingMediaSource2.Builder().setMediaSourceFactory(DefaultMediaSourceFactory(FileDataSource.Factory()))
+        videoMediaItems.forEach { videoBuilder.add(it, 5000) }
+        val videoMediaSource = videoBuilder.build()
 
-        val i = items.toTypedArray()
-        val mediaSource = MergingMediaSource(false, *i)
-        player!!.setMediaSource(mediaSource)
+
+
+        val audioList = arrayListOf(
+            "a01.mp4",
+            "a02.mp4",
+            "a03.mp4",
+            "a04.mp4",
+        )
+
+        val audioMediaItems = audioList.map { MediaItem.fromUri(Uri.fromFile(File(MainActivity@ this.filesDir.absolutePath + File.separator + it))) }
+        val audioBuilder = ConcatenatingMediaSource2.Builder().setMediaSourceFactory(DefaultMediaSourceFactory(FileDataSource.Factory()))
+        audioMediaItems.forEach { audioBuilder.add(it, 5000) }
+        val audioMediaSource = audioBuilder.build()
+
+        val mergedMediaSource = MergingMediaSource(videoMediaSource, audioMediaSource)
+
+        player!!.setMediaSource(mergedMediaSource)
         player!!.prepare()
-        player!!.playWhenReady = true // Start playing when ready
+        player!!.playWhenReady = true // Start
+
     }
 
     override fun onStop() {
